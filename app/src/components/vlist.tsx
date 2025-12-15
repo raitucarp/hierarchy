@@ -1,100 +1,76 @@
 import {
-  ListMd,
-  listsByFilePathAtomFamily,
-  selectListItemAtom,
-  selectedListAtom,
-  isItemSelectedListItemAtom,
-  selectedListViewModeAtom,
-  viewModeAtom,
-  listOfSelectedAtom,
-  ListMetadata,
-  flattenListsAtom,
-} from "@/atoms/lists";
-import {
   Badge,
   Box,
-  ButtonGroup,
   HStack,
-  IconButton,
   List,
   StackSeparator,
   Text,
-  useCollapsible,
   VStack,
 } from "@chakra-ui/react";
-import { useAtomValue } from "jotai";
-import { FC, ReactNode, useCallback, useRef, useState } from "react";
-import {
-  LuArrowDown,
-  LuArrowDownFromLine,
-  LuArrowDownToDot,
-  LuChevronDown,
-  LuChevronUp,
-  LuDot,
-  LuSearch,
-} from "react-icons/lu";
-import {
-  ImperativePanelHandle,
-  Panel,
-  PanelGroup,
-  PanelResizeHandle,
-} from "react-resizable-panels";
+import { FC } from "react";
+import { LuDot } from "react-icons/lu";
 import { ScrollArea } from "@chakra-ui/react";
-import { listmd } from "@/lib/wailsjs/go/models";
-import { useSetAtom } from "jotai";
-import { chain, compact, flatten, get, size } from "lodash";
+import { application, listmd } from "@/lib/wailsjs/go/models";
+import {
+  ListSelectedItems,
+  SelectListItem,
+} from "@/lib/wailsjs/go/application/App";
+import { useQuery } from "@tanstack/react-query";
+import { chain, keys } from "lodash";
+import {
+  buildNestedListFromSelectedList,
+  flattenLists,
+} from "@/utils/list-utils";
+import { Resizable } from "re-resizable";
+import Markdown from "react-markdown";
+import rehype from "rehype-raw";
+import remarkGfm from "remark-gfm";
 
-export const PanelResizeHorizontal = () => {
-  return (
-    <Box asChild w="0.2rem" h="100%" bgColor="border.subtle">
-      <PanelResizeHandle />
-    </Box>
-  );
-};
-
-export const PanelResizeVertical = () => {
-  return (
-    <Box asChild h="1px" w="100%" bgColor="border.emphasized">
-      <PanelResizeHandle />
-    </Box>
-  );
-};
-
-const ListItem: FC<Omit<listmd.Node, "convertValues">> = ({
-  uid,
-  markdown,
-  children,
-}) => {
-  const isItemSelected = useAtomValue(isItemSelectedListItemAtom(uid));
-  const selectListItem = useSetAtom(selectListItemAtom);
+const ListItem: FC<
+  Omit<listmd.Node, "convertValues"> & { filePath: string }
+> = ({ uid, filePath, markdown, children }) => {
+  const {
+    isPending,
+    isError,
+    isLoading,
+    data: selectedItems,
+    error,
+  } = useQuery({
+    queryKey: [application.QueryKey.ListSelectedItemsKey],
+    queryFn: (): ReturnType<typeof ListSelectedItems> => {
+      return ListSelectedItems(filePath);
+    },
+  });
 
   return (
     <List.Item
       key={uid}
       truncate
-      _hover={{ bg: "bg.muted" }}
-      borderLeft="2px solid"
-      borderColor="border.muted"
-      p="0.1rem"
+      _hover={{ bg: "bg.muted", cursor: "default" }}
+      onClick={() => SelectListItem(filePath, uid)}
+      bg={
+        !selectedItems
+          ? "unset"
+          : selectedItems.includes(uid)
+            ? "bg.emphasized"
+            : "unset"
+      }
+      fontWeight={
+        !selectedItems ? "unset" : selectedItems.includes(uid) ? "600" : "unset"
+      }
       position="relative"
-      fontSize="md"
-      bgColor={isItemSelected ? "bg.emphasized" : "unset"}
-      onClick={() => {
-        selectListItem(uid);
-      }}
     >
       <List.Indicator asChild>
         <LuDot />
       </List.Indicator>
       {markdown}
-      {children && (
+      {children && children?.length > 0 && (
         <Badge
-          size="xs"
           position="absolute"
-          right="0.3rem"
+          right="3"
           top="1"
-          rounded="full"
-          variant="subtle"
+          size="xs"
+          variant="surface"
         >
           {children?.length}
         </Badge>
@@ -103,226 +79,250 @@ const ListItem: FC<Omit<listmd.Node, "convertValues">> = ({
   );
 };
 
-const ListPanel: FC<Omit<listmd.Node, "convertValues">> = ({
-  children,
-  markdown,
-  uid,
-  id,
+const ListItems: FC<{ list: listmd.Node[]; filePath: string }> = ({
+  list,
+  filePath,
 }) => {
-  const panelRef = useRef<ImperativePanelHandle>(null);
-  const [collapse, setCollapse] = useState<boolean>(false);
-  const togglePanel = () => {
-    const panel = panelRef.current;
-
-    if (!panel) return;
-    if (panel.isCollapsed()) {
-      setCollapse(false);
-      panel.expand();
-      return;
-    }
-
-    if (panel.isExpanded()) {
-      setCollapse(true);
-      panel.collapse();
-      return;
-    }
-  };
-
-  const order = chain(uid).split("_").nth(-2).value();
-
   return (
-    <>
-      {children && children.length > 0 && (
-        <HStack
-          w="100%"
-          bg="bg.muted"
-          fontSize="xs"
-          fontWeight="bold"
-          p="0.2rem"
-          justify="space-between"
-          position="sticky"
-          top="0rem"
-          zIndex="100"
-        >
-          <Text as="span" truncate>
-            {id === -1 ? `${children?.length} items` : markdown}{" "}
-          </Text>
+    <List.Root fontSize="md" w="100%">
+      {list.map((listItem, index) => (
+        <ListItem {...listItem} filePath={filePath} key={index} />
+      ))}
+    </List.Root>
+  );
+};
 
-          <ButtonGroup size="xs" variant="ghost" p="0" attached>
-            {children.length > 1 && (
-              <IconButton>
-                <LuSearch />
-              </IconButton>
-            )}
-            <IconButton onClick={togglePanel}>
-              {collapse ? <LuChevronDown /> : <LuChevronUp />}
-            </IconButton>
-          </ButtonGroup>
-        </HStack>
-      )}
-
-      <VStack
+const ListGroup: FC<{ list: listmd.Node; filePath: string }> = ({
+  list,
+  filePath,
+}) => {
+  return (
+    <VStack w="100%" alignItems="start" cursor="default" gap={0}>
+      <HStack
+        bg="bg.emphasized"
         w="100%"
-        minH={collapse ? "0" : "min-content"}
-        maxH={collapse ? "0" : "max-content"}
-        asChild
+        fontSize="sm"
+        p="0.2rem"
+        position="sticky"
+        top="0"
+        zIndex="100"
+        gradientFrom={"bg.emphasized"}
+        gradientTo={"bg.subtle"}
+        bgGradient={"to-br"}
       >
-        <Panel
-          collapsible
-          minSize={10}
-          collapsedSize={0}
-          id={uid}
-          order={parseInt(order)}
-          ref={panelRef}
-        >
-          {children && children.length > 0 ? (
-            <List.Root w="100%" userSelect="none" gap={1}>
-              {children?.map((v) => (
-                <ListItem key={v.uid} {...v} />
-              ))}
-            </List.Root>
-          ) : (
-            <Box p="0.5rem" bg="bg.muted" fontSize="sm" fontFamily="monospace">
-              {markdown}
-            </Box>
-          )}
-        </Panel>
-      </VStack>
-    </>
-  );
-};
-
-const ListPanelGroup: FC<{ name: string; children: ReactNode }> = ({
-  name,
-  children,
-}) => {
-  return (
-    <PanelGroup
-      direction="vertical"
-      autoSaveId={`persistance-layout-${name}-list`}
-    >
-      <ScrollArea.Root variant="always" height="calc(100vh - 3rem)">
-        <ScrollArea.Viewport>
-          <ScrollArea.Content h="100%" minW="100% !important">
-            <VStack separator={<PanelResizeVertical />}>{children}</VStack>
-          </ScrollArea.Content>
-        </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar zIndex={101} />
-      </ScrollArea.Root>
-    </PanelGroup>
-  );
-};
-
-export const VSelectedLists: FC<{
-  lists: listmd.Node[][];
-  metadata: ListMetadata;
-}> = ({ lists, metadata }) => {
-  const listOfSelected = useAtomValue(listOfSelectedAtom);
-  const flattenLists = useAtomValue(flattenListsAtom);
-
-  return listOfSelected
-    ? Object.keys(listOfSelected)
-        .map((level, index) => {
-          const selectedItems = listOfSelected[parseInt(level)];
-          if (compact(selectedItems).length <= 0) return null;
-
-          const selectedList = chain(selectedItems)
-            .compact()
-            .map((uid) => {
-              return flattenLists.find((list) => list.uid === uid)!;
-            })
-            .compact()
-            .value();
-
-          if (selectedList.length <= 0) return null;
-
-          return (
-            <VStack asChild key={index} alignItems="start">
-              <Panel
-                minSize={10}
-                maxSize={20}
-                collapsedSize={5}
-                collapsible={false}
-                id={`list-level-${level}`}
-                order={parseInt(level) + 1}
-              >
-                <ListPanelGroup name={`${metadata.name}-${level}`}>
-                  {selectedList.map(
-                    ({ uid, id, markdown, children }, index) => (
-                      <ListPanel
-                        uid={uid}
-                        id={id}
-                        markdown={markdown}
-                        children={children!}
-                        key={index}
-                      />
-                    ),
-                  )}
-                </ListPanelGroup>
-              </Panel>
-            </VStack>
-          );
-        })
-        .flatMap((child, index) => [
-          child,
-          index < Object.keys(listOfSelected).length - 1 ? (
-            <PanelResizeHorizontal key={`sep-${index}`} />
-          ) : null,
-        ])
-    : null;
-};
-
-export const MainVList: FC<Omit<listmd.ListMd, "convertValues">> = ({
-  metadata,
-  lists,
-}) => {
-  return (
-    <VStack asChild>
-      <Panel
-        minSize={10}
-        maxSize={20}
-        collapsedSize={5}
-        collapsible={false}
-        id="main-list"
-        order={0}
-      >
-        <ListPanelGroup name={metadata.name}>
-          {lists!
-            .filter((list) => list.length > 0)
-            .map((list, index) => (
-              <ListPanel
-                children={list}
-                markdown={""}
-                uid="item_ _ _"
-                id={-1}
-                key={index}
-              />
-            ))}
-        </ListPanelGroup>
-      </Panel>
+        {list.id === -1 ? (
+          <Text truncate>{list.children?.length} items</Text>
+        ) : (
+          <VStack w="100%" alignItems="start" p="0.5rem">
+            <Markdown rehypePlugins={[rehype]} remarkPlugins={[remarkGfm]}>
+              {list.markdown}
+            </Markdown>
+          </VStack>
+        )}
+      </HStack>
+      {list.children && <ListItems list={list.children} filePath={filePath} />}
     </VStack>
   );
 };
 
-export const VList: FC<ListMd> = (listMd) => {
-  const { metadata, lists } = listMd;
+const ListLevel: FC<{
+  lists: listmd.Node[];
+  filePath: string;
+  id: string;
+}> = ({ lists, filePath, id }) => {
   return (
-    <PanelGroup
-      direction="horizontal"
-      autoSaveId={`persistance-layout-${metadata.name}`}
+    <Resizable
+      defaultSize={{ width: "15vw" }}
+      minWidth={"12vw"}
+      maxWidth={"18vw"}
     >
-      <HStack
-        w="100%"
-        separator={<PanelResizeHorizontal />}
-        alignItems="stretch"
+      <ScrollArea.Root
+        height="calc(100dvh - 5rem) !important"
+        flex={1}
+        variant="always"
+        // minWidth="10rem"
+        // maxWidth="12rem"
+        borderRight="2px solid"
+        borderColor="border.muted"
       >
-        <MainVList lists={lists!} metadata={metadata} />
-        <VSelectedLists lists={lists!} metadata={metadata} />
+        <ScrollArea.Viewport>
+          <VStack
+            asChild
+            gap={3}
+            separator={
+              <StackSeparator
+                borderColor="border.emphasized"
+                borderWidth="10px"
+              />
+            }
+          >
+            <ScrollArea.Content minW="100% !important">
+              {lists.map((list, index) => (
+                <ListGroup key={index} list={list} filePath={filePath} />
+              ))}
+            </ScrollArea.Content>
+          </VStack>
+        </ScrollArea.Viewport>
+        <ScrollArea.Scrollbar zIndex="101">
+          <ScrollArea.Thumb />
+        </ScrollArea.Scrollbar>
+      </ScrollArea.Root>
+    </Resizable>
+  );
+};
 
-        <VStack asChild h="100%">
-          <Panel id="preview">{metadata.file_path}</Panel>
-        </VStack>
-      </HStack>
-    </PanelGroup>
+const NestedList: FC<Omit<application.ListFile, "convertValues">> = ({
+  metadata,
+  lists,
+  selectedListItems,
+}) => {
+  const newLists = buildNestedListFromSelectedList(selectedListItems, lists);
+
+  return newLists.length > 0
+    ? newLists.map((newList, index) => (
+        <ListLevel
+          key={`level-${index}`}
+          lists={newList}
+          filePath={metadata.file_path}
+          id={`level-${index}`}
+        />
+      ))
+    : null;
+};
+
+const BadgeListItemNumber: FC<{ uid: string }> = ({ uid }) => {
+  const [, collection, ...tail] = uid.split("_");
+
+  return (
+    <Badge>
+      {tail
+        .map((v) => {
+          return parseInt(v) + 1;
+        })
+        .join(".")}
+    </Badge>
+  );
+};
+
+const SelectedListItemView: FC<Omit<application.ListFile, "convertValues">> = ({
+  metadata,
+  lists,
+  selectedListItems,
+}) => {
+  const listByCollection = chain(lists)
+    .flatMap((list) => flattenLists(list))
+    .filter((v) => selectedListItems.includes(v.uid))
+    .groupBy((v) => {
+      const [, collection] = v.uid.split("_");
+      return parseInt(collection);
+    })
+    .value();
+
+  return (
+    <ScrollArea.Root height="calc(100% - 1rem)" w="100%" minW="50vw" size="sm">
+      <ScrollArea.Viewport>
+        <ScrollArea.Content spaceY="4" textStyle="sm">
+          <VStack
+            flex={1}
+            h="100%"
+            alignItems="start"
+            separator={<StackSeparator />}
+          >
+            {keys(listByCollection).map((collection, index) => {
+              return (
+                <HStack
+                  w="100%"
+                  key={index}
+                  p={"0.1rem"}
+                  alignItems="start"
+                  separator={<StackSeparator />}
+                >
+                  <Box
+                    fontSize="1.2rem"
+                    // p={1}
+                  >
+                    {parseInt(collection) + 1}
+                  </Box>
+                  <VStack flex={1} separator={<StackSeparator />}>
+                    {listByCollection[collection].map((listItem, index) => (
+                      <VStack w="100%" key={listItem.uid} alignItems="start">
+                        <Markdown>{listItem.markdown}</Markdown>
+                      </VStack>
+                    ))}
+                  </VStack>
+                </HStack>
+              );
+            })}
+          </VStack>
+        </ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar>
+        <ScrollArea.Thumb />
+      </ScrollArea.Scrollbar>
+      <ScrollArea.Corner />
+    </ScrollArea.Root>
+  );
+};
+
+export const VList: FC<Omit<application.ListFile, "convertValues">> = (
+  listFile,
+) => {
+  const { lists, metadata } = listFile;
+  const {
+    isPending,
+    isError,
+    isLoading,
+    data: selectedListItems,
+    error,
+  } = useQuery({
+    queryKey: [application.QueryKey.ListSelectedItemsKey],
+    queryFn: (): ReturnType<typeof ListSelectedItems> => {
+      return ListSelectedItems(metadata.file_path);
+    },
+  });
+
+  const mainList = lists.flatMap(
+    (v) =>
+      ({
+        id: -1,
+        uid: "",
+        markdown: "",
+        children: v,
+      }) as listmd.Node,
+  );
+
+  return (
+    <HStack w="100%" h="100%" alignItems="stretch" justify="start">
+      <ListLevel
+        lists={mainList}
+        filePath={metadata.file_path}
+        id={"main-list"}
+      />
+
+      {selectedListItems && (
+        <ScrollArea.Root
+          h="calc(100dvh - 5rem) !important"
+          variant="always"
+          size="sm"
+          overflowY="hidden"
+        >
+          <ScrollArea.Viewport overflowY="hidden">
+            <ScrollArea.Content overflowY="hidden">
+              <HStack w="100%" alignItems="start">
+                <NestedList
+                  {...listFile}
+                  selectedListItems={selectedListItems}
+                />
+                <SelectedListItemView
+                  {...listFile}
+                  selectedListItems={selectedListItems}
+                />
+              </HStack>
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="horizontal" zIndex="105" />
+        </ScrollArea.Root>
+      )}
+    </HStack>
   );
 };

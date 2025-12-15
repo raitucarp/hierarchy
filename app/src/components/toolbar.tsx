@@ -1,63 +1,76 @@
+import { application } from "@/lib/wailsjs/go/models";
 import {
-  selectedListAtom,
-  selectedListViewModeAtom,
-  setSelectedListViewModeAtom,
-  viewModeAtom,
-} from "@/atoms/lists";
-import { ButtonGroup, HStack, IconButton } from "@chakra-ui/react";
-import { useSetAtom } from "jotai";
-import { useAtomValue } from "jotai";
+  ButtonGroup,
+  HStack,
+  IconButton,
+  Input,
+  InputGroup,
+} from "@chakra-ui/react";
+import { FC } from "react";
 import {
-  LuChartColumn,
   LuChartLine,
   LuColumns3,
-  LuFileChartLine,
   LuFolderTree,
-  LuFoldHorizontal,
-  LuGripHorizontal,
-  LuGripVertical,
   LuIdCard,
-  LuLayoutList,
-  LuList,
   LuListTree,
-  LuSun,
 } from "react-icons/lu";
 
-export const ViewToolbar = () => {
-  const selectedList = useAtomValue(selectedListAtom);
-  const viewMode = useAtomValue(selectedListViewModeAtom);
-  const setViewMode = useSetAtom(setSelectedListViewModeAtom);
+export const ViewToolbar: FC<Omit<application.ListFile, "convertValues">> = ({
+  viewMode,
+  metadata,
+}) => {
+  return (
+    <HStack p="0.2rem" gap="2" justify="space-between">
+      <InputGroup
+        startElement="file://"
+        startElementProps={{ color: "fg.muted" }}
+      >
+        <Input
+          ps="7ch"
+          placeholder="yoursite.com"
+          value={metadata.file_path}
+          size="xs"
+        />
+      </InputGroup>
 
-  return !selectedList ? null : (
-    <HStack p="0.1rem" gap="0" justify="end" position="absolute" right="0">
       <ButtonGroup size="xs" variant="ghost" attached>
         <IconButton
-          variant={viewMode === "list" ? "subtle" : "ghost"}
-          onClick={() => setViewMode("list")}
+          variant={
+            viewMode === application.ViewMode.VListViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {}}
         >
           <LuListTree />
         </IconButton>
         <IconButton
-          variant={viewMode === "horizontal-list" ? "subtle" : "ghost"}
-          onClick={() => setViewMode("horizontal-list")}
+          variant={
+            viewMode === application.ViewMode.HListViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {}}
         >
           <LuColumns3 />
         </IconButton>
         <IconButton
-          variant={viewMode === "tree" ? "subtle" : "ghost"}
-          onClick={() => setViewMode("tree")}
+          variant={
+            viewMode === application.ViewMode.TreeViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {}}
         >
           <LuFolderTree />
         </IconButton>
         <IconButton
-          variant={viewMode === "chart" ? "subtle" : "ghost"}
-          onClick={() => setViewMode("chart")}
+          variant={
+            viewMode === application.ViewMode.ChartViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {}}
         >
           <LuChartLine />
         </IconButton>
         <IconButton
-          variant={viewMode === "card" ? "subtle" : "ghost"}
-          onClick={() => setViewMode("card")}
+          variant={
+            viewMode === application.ViewMode.CardViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {}}
         >
           <LuIdCard />
         </IconButton>

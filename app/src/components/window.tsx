@@ -1,4 +1,3 @@
-import { selectedListAtom, selectedListNumberAtom } from "@/atoms/lists";
 import { ButtonGroup, IconButton } from "@chakra-ui/react";
 import { useAtomValue } from "jotai";
 import { FC } from "react";

@@ -37,6 +37,11 @@ func main() {
 		Bind: []any{
 			app,
 		},
+		EnumBind: []any{
+			application.AllEvents,
+			application.AllQueryKeys,
+			application.ViewModes,
+		},
 	})
 
 	if err != nil {

@@ -1,117 +1,105 @@
 import {
-  listsAtom,
-  selectedListAtom,
-  selectedListNumberAtom,
-  updateSelectedListByFilePathAtom,
-  viewModeAtom,
-} from "@/atoms/lists";
-import { OpenListMdFile } from "@/lib/wailsjs/go/application/App";
-import {
-  Button,
-  createToaster,
-  Heading,
-  HStack,
-  Icon,
-  IconButton,
-  Tabs,
-  VStack,
-} from "@chakra-ui/react";
-import { useSetAtom } from "jotai";
-import { useAtomValue } from "jotai";
-import { useState } from "react";
-import { LuFile, LuFolderOpen, LuPlus } from "react-icons/lu";
-import { toaster, Toaster } from "@/components/ui/toaster";
-import { useAtom } from "jotai";
+  AllOpenedFiles,
+  OpenListMdFile,
+} from "@/lib/wailsjs/go/application/App";
+
+import { Heading, Tabs, VStack } from "@chakra-ui/react";
+import { FC } from "react";
+import { LuFile } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
+import { size } from "lodash";
+import { application } from "@/lib/wailsjs/go/models";
 import { Lists } from "./lists";
 import { ViewToolbar } from "./toolbar";
 
-const CleanSlateTab = () => {
-  const updateSelectedList = useSetAtom(updateSelectedListByFilePathAtom);
-  const [lists, setLists] = useAtom(listsAtom);
-  const setViewMode = useSetAtom(viewModeAtom);
+const CleanSlate = () => {
   return (
-    <Tabs.Content value="cleanslate" p={0} h="100%" w="100%" asChild>
-      <VStack
-        justify="center"
-        alignItems="center"
-        color="fg.muted"
-        userSelect="none"
-        onClick={async () => {
-          try {
-            const newList = await OpenListMdFile();
-            const currentListsWithSamePathIndex = lists.findIndex(
-              (v) => v.metadata.file_path === newList.metadata.file_path,
-            );
+    <VStack
+      h="100%"
+      w="100%"
+      justify="center"
+      alignItems="center"
+      color="fg.muted"
+      userSelect="none"
+      onClick={async () => {
+        try {
+          await OpenListMdFile();
+        } catch (err) {}
+      }}
+    >
+      <LuFile style={{ width: "10rem", height: "10rem" }} />
+      <Heading fontSize={"5xl"} lineHeight={"tall"}>
+        Open .list.md file
+      </Heading>
+      <Heading fontSize={"lg"} lineHeight={"tall"}>
+        click here or drag and drop
+      </Heading>
+    </VStack>
+  );
+};
 
-            if (currentListsWithSamePathIndex > -1) {
-              updateSelectedList(
-                lists[currentListsWithSamePathIndex].metadata.file_path,
-              );
-              return;
-            }
-            setLists((draft) => {
-              draft.push(newList);
-            });
-            setViewMode((draft) => {
-              draft[newList.metadata?.file_path] = "list";
-            });
-            updateSelectedList(newList.metadata?.file_path);
-          } catch (err) {
-            toaster.create({
-              description: "Error open file:" + err,
-              type: "error",
-              closable: true,
-            });
-          }
-        }}
+const HierarchyContents: FC<{
+  openedFiles: Awaited<ReturnType<typeof AllOpenedFiles>>;
+}> = ({ openedFiles }) => {
+  return (
+    openedFiles && (
+      <Tabs.Root
+        value={openedFiles.selected}
+        // @ts-ignore
+        style={{ "--wails-draggable": "nodrag" }}
+        variant="subtle"
+        w="100%"
+        flex={1}
+        gap={0}
+        p={0}
+        lazyMount
+        unmountOnExit
+        position="relative"
+        id="tabs-content-main"
       >
-        <LuFile style={{ width: "10rem", height: "10rem" }} />
-        <Heading fontSize={"5xl"} lineHeight={"tall"}>
-          Open .list.md file
-        </Heading>
-        <Heading fontSize={"lg"} lineHeight={"tall"}>
-          click here or drag and drop
-        </Heading>
-        <Toaster />
-      </VStack>
-    </Tabs.Content>
+        {openedFiles.files.map((listFile) => {
+          return (
+            <Tabs.Content
+              value={listFile.metadata.file_path}
+              key={listFile.metadata.file_path}
+              h="100%"
+              p={0}
+            >
+              <ViewToolbar {...listFile} />
+              <Lists {...listFile} />
+            </Tabs.Content>
+          );
+        })}
+      </Tabs.Root>
+    )
   );
 };
 
 export const Hierarchy = () => {
-  const selectedList = useAtomValue(selectedListAtom);
-  const lists = useAtomValue(listsAtom);
+  const {
+    isPending,
+    isError,
+    isLoading,
+    data: openedFiles,
+    error,
+  } = useQuery({
+    queryKey: [application.QueryKey.OpenedFilesKey],
+    queryFn: (): ReturnType<typeof AllOpenedFiles> => {
+      return AllOpenedFiles();
+    },
+  });
 
-  return (
-    <Tabs.Root
-      value={selectedList ? selectedList.metadata.file_path : "cleanslate"}
-      // onValueChange={}
-      // @ts-ignore
-      style={{ "--wails-draggable": "nodrag" }}
-      variant="subtle"
-      w="100%"
-      flex={1}
-      gap={0}
-      p={0}
-      lazyMount
-      unmountOnExit
-      position="relative"
-    >
-      <ViewToolbar />
-      {lists.map((list, index) => (
-        <Tabs.Content
-          value={list.metadata.file_path}
-          key={index}
-          p={0}
-          h="100%"
-          w="100%"
-          asChild
-        >
-          <Lists filePath={list.metadata.file_path} />
-        </Tabs.Content>
-      ))}
+  if (isPending || isLoading) {
+    return <span>Loading...</span>;
+  }
 
-      <CleanSlateTab />
-    </Tabs.Root>
+  if (isError) {
+    return <span>Error: {error.message}</span>;
+  }
+
+  return openedFiles && size(openedFiles.files) > 0 ? (
+    <HierarchyContents openedFiles={openedFiles} />
+  ) : (
+    <CleanSlate />
   );
 };

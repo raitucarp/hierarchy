@@ -10,14 +10,30 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+type ListFile struct {
+	Lists                [][]*listmd.Node `json:"lists"`
+	Metadata             Metadata         `json:"metadata"`
+	ViewMode             ViewMode         `json:"viewMode"`
+	SelectedListItems    []string         `json:"selectedListItems"`
+	PreSelectedListItems []string         `json:"preSelectedListItems"`
+}
+
+type OpenedFiles struct {
+	SelectedFile string     `json:"selected"`
+	Files        []ListFile `json:"files"`
+}
+
 // App struct
 type App struct {
-	ctx context.Context
+	ctx         context.Context
+	openedFiles *OpenedFiles
 }
 
 // New creates a new App application struct
 func New() *App {
-	return &App{}
+	return &App{
+		openedFiles: &OpenedFiles{SelectedFile: "", Files: []ListFile{}},
+	}
 }
 
 // startup is called when the app starts. The context is saved
@@ -33,7 +49,7 @@ type Metadata struct {
 }
 
 // Greet returns a greeting for the given name
-func (hierachyApp *App) OpenListMdFile() (lists listmd.ListMd, err error) {
+func (hierachyApp *App) OpenListMdFile() (err error) {
 	listMdFilePath, err := runtime.OpenFileDialog(hierachyApp.ctx, runtime.OpenDialogOptions{
 		Title: "Select File",
 		Filters: []runtime.FileFilter{
@@ -44,10 +60,17 @@ func (hierachyApp *App) OpenListMdFile() (lists listmd.ListMd, err error) {
 		},
 	})
 
+	if err != nil {
+		return
+	}
+
 	listMdContent, err := os.ReadFile(listMdFilePath)
+	if err != nil {
+		return
+	}
 
 	var metadata Metadata
-	lists, err = listmd.Unmarshal(listMdContent, &metadata)
+	listMd, err := listmd.Unmarshal(listMdContent, &metadata)
 	if err != nil {
 		return
 	}
@@ -55,8 +78,16 @@ func (hierachyApp *App) OpenListMdFile() (lists listmd.ListMd, err error) {
 	metadata.FilePath = listMdFilePath
 	if metadata.Name == "" {
 		metadata.Name = strings.ReplaceAll(filepath.Base(listMdFilePath), ".list.md", "")
-		lists.Metadata = metadata
+		listMd.Metadata = metadata
 	}
 
+	hierachyApp.openedFiles.Files = append(hierachyApp.openedFiles.Files, ListFile{
+		Lists:    listMd.Lists,
+		Metadata: metadata,
+		ViewMode: VListViewMode,
+	})
+	hierachyApp.openedFiles.SelectedFile = listMdFilePath
+
+	runtime.EventsEmit(hierachyApp.ctx, string(ReloadAllOpenedFiles), "")
 	return
 }
