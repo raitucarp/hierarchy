@@ -1,6 +1,9 @@
 name: Hierarchy build
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -32,3 +35,68 @@ jobs:
           build-platform: ${{ matrix.build.platform }}
           build-obfuscate: true
           go-version: 1.25
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R ./artifacts
+
+      - name: Prepare release assets
+        run: |
+          # Create a directory for release assets
+          mkdir -p release-assets
+
+          # Find and organize build artifacts
+          find ./artifacts -type f -name "hierarchy-app*" | while read file; do
+            # Extract platform name from artifact folder
+            dirname=$(dirname "$file")
+            platform=$(basename "$dirname" | sed 's/hierarchy-app-//')
+
+            # Get file extension
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+
+            # Create new filename with platform and extension
+            if [ "$extension" = "exe" ]; then
+              new_name="hierarchy-app-${platform}.exe"
+            else
+              new_name="hierarchy-app-${platform}"
+            fi
+
+            # Copy to release assets with proper naming
+            cp "$file" "./release-assets/$new_name"
+            chmod +x "./release-assets/$new_name"
+          done
+
+          echo "Release assets prepared:"
+          ls -la ./release-assets/
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Release Notes
+
+            Automated release for ${{ github.ref_name }}
+
+            ### Assets
+            - hierarchy-app-linux-amd64 (Linux)
+            - hierarchy-app-windows-amd64.exe (Windows)
+            - hierarchy-app-darwin-universal (macOS)
+          draft: false
+          prerelease: false
+          files: |
+            release-assets/hierarchy-app-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
