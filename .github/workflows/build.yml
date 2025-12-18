@@ -15,16 +15,23 @@ jobs:
       matrix:
         build:
           [
-            { name: hierarchy-app, platform: linux/amd64, os: ubuntu-latest },
+            {
+              name: hierarchy-app,
+              platform: linux/amd64,
+              os: ubuntu-latest,
+              artifact: "hierarchy-app-linux-amd64",
+            },
             {
               name: hierarchy-app,
               platform: windows/amd64,
               os: windows-latest,
+              artifact: "hierarchy-app-windows-amd64.exe",
             },
             {
               name: hierarchy-app,
               platform: darwin/universal,
               os: macos-latest,
+              artifact: "hierarchy-app-darwin-universal",
             },
           ]
     runs-on: ${{ matrix.build.os }}
@@ -80,7 +87,19 @@ jobs:
 
           echo "Release assets prepared:"
           ls -la ./release-assets/
-
+      - name: Generate changelog
+        run: |
+          # Get commits since last tag
+          git fetch --tags
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            CHANGES=$(git log --oneline)
+          else
+            CHANGES=$(git log $LAST_TAG..HEAD --oneline)
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -89,7 +108,11 @@ jobs:
           body: |
             ## Release Notes
 
-            Automated release for ${{ github.ref_name }}
+            ${{ env.CHANGELOG }}
+
+            ---
+
+            Release for ${{ github.ref_name }}
 
             ### Assets
             - hierarchy-app-linux-amd64 (Linux)
