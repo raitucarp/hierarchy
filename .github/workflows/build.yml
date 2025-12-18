@@ -100,7 +100,7 @@ jobs:
           body: |
             ## Release Notes
 
-            ${{ generate_changelog.changelog }}
+            ${{ steps.generate_changelog.changelog }}
 
             ---
 
