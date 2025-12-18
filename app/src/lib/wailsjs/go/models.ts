@@ -17,6 +17,7 @@ export namespace application {
 	    TreeViewMode = "TreeViewMode",
 	    ChartViewMode = "ChartViewMode",
 	    CardViewMode = "CardViewMode",
+	    GraphViewMode = "GraphViewMode",
 	}
 	export class Metadata {
 	    name: string;

@@ -51,12 +51,9 @@ export const ListMdTabs = () => {
     <Tabs.Root
       value={openedFiles.selected}
       onValueChange={async (e) => {
-        console.log(e.value);
         try {
           await ChangeSelectedFile(e.value);
-        } catch (err) {
-          console.log(err);
-        }
+        } catch (err) {}
       }}
       // @ts-ignore
       style={{ "--wails-draggable": "nodrag" }}

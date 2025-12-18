@@ -10,6 +10,10 @@ export function ChangeSelectedFile(arg1) {
   return window['go']['application']['App']['ChangeSelectedFile'](arg1);
 }
 
+export function ChangeViewMode(arg1, arg2) {
+  return window['go']['application']['App']['ChangeViewMode'](arg1, arg2);
+}
+
 export function Exit() {
   return window['go']['application']['App']['Exit']();
 }

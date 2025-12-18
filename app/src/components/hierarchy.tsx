@@ -57,19 +57,20 @@ const HierarchyContents: FC<{
         position="relative"
         id="tabs-content-main"
       >
-        {openedFiles.files.map((listFile) => {
-          return (
-            <Tabs.Content
-              value={listFile.metadata.file_path}
-              key={listFile.metadata.file_path}
-              h="100%"
-              p={0}
-            >
-              <ViewToolbar {...listFile} />
-              <Lists {...listFile} />
-            </Tabs.Content>
-          );
-        })}
+        {openedFiles.files.length > 0 &&
+          openedFiles.files.map((listFile) => {
+            return (
+              <Tabs.Content
+                value={listFile.metadata.file_path}
+                key={listFile.metadata.file_path}
+                h="100%"
+                p={0}
+              >
+                <ViewToolbar {...listFile} />
+                <Lists {...listFile} />
+              </Tabs.Content>
+            );
+          })}
       </Tabs.Root>
     )
   );

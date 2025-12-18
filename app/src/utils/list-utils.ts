@@ -17,7 +17,6 @@ export const buildNestedListFromSelectedList = (
       const selectedLists = chain(selectedItemsByLevel[level])
         .sort()
         .map((uid) => {
-          console.log({ uid, level, a: flatList.find((v) => v.uid == uid) });
           return flatList.find((v) => v.uid == uid);
         })
         .compact()

@@ -25,7 +25,7 @@ func (hierachyApp *App) findSelectedFileIndex(filePath string) (fileIndex int, e
 		return selectedFileIndex, errors.New("Selected file not found")
 	}
 
-	return
+	return selectedFileIndex, err
 }
 
 func (hierachyApp *App) ChangeSelectedFile(filePath string) (err error) {

@@ -24,6 +24,12 @@ function App() {
         queryKey: [application.QueryKey.ListSelectedItemsKey],
       });
     });
+
+    EventsOn(application.Event.ChangeViewMode, () => {
+      queryClient.invalidateQueries({
+        queryKey: [application.QueryKey.OpenedFilesKey],
+      });
+    });
   }, []);
 
   return (

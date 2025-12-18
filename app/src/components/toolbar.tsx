@@ -1,3 +1,4 @@
+import { ChangeViewMode } from "@/lib/wailsjs/go/application/App";
 import { application } from "@/lib/wailsjs/go/models";
 import {
   ButtonGroup,
@@ -9,10 +10,12 @@ import {
 import { FC } from "react";
 import {
   LuChartLine,
+  LuCircleDotDashed,
   LuColumns3,
   LuFolderTree,
   LuIdCard,
   LuListTree,
+  LuNetwork,
 } from "react-icons/lu";
 
 export const ViewToolbar: FC<Omit<application.ListFile, "convertValues">> = ({
@@ -38,7 +41,12 @@ export const ViewToolbar: FC<Omit<application.ListFile, "convertValues">> = ({
           variant={
             viewMode === application.ViewMode.VListViewMode ? "subtle" : "ghost"
           }
-          onClick={() => {}}
+          onClick={() =>
+            ChangeViewMode(
+              metadata.file_path,
+              application.ViewMode.VListViewMode,
+            )
+          }
         >
           <LuListTree />
         </IconButton>
@@ -73,6 +81,19 @@ export const ViewToolbar: FC<Omit<application.ListFile, "convertValues">> = ({
           onClick={() => {}}
         >
           <LuIdCard />
+        </IconButton>
+        <IconButton
+          variant={
+            viewMode === application.ViewMode.GraphViewMode ? "subtle" : "ghost"
+          }
+          onClick={() => {
+            ChangeViewMode(
+              metadata.file_path,
+              application.ViewMode.GraphViewMode,
+            );
+          }}
+        >
+          <LuCircleDotDashed />
         </IconButton>
       </ButtonGroup>
     </HStack>
