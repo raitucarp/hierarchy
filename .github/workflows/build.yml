@@ -88,6 +88,7 @@ jobs:
           echo "Release assets prepared:"
           ls -la ./release-assets/
       - name: Generate changelog
+        id: generate_changelog
         uses: janheinrichmerker/action-github-changelog-generator@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -99,7 +100,7 @@ jobs:
           body: |
             ## Release Notes
 
-            ${{ changelog }}
+            ${{ generate_changelog.changelog }}
 
             ---
 
