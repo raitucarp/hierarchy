@@ -10,6 +10,10 @@ export function ChangeSelectedFile(arg1) {
   return window['go']['application']['App']['ChangeSelectedFile'](arg1);
 }
 
+export function Exit() {
+  return window['go']['application']['App']['Exit']();
+}
+
 export function ListSelectedItems(arg1) {
   return window['go']['application']['App']['ListSelectedItems'](arg1);
 }
@@ -20,4 +24,8 @@ export function OpenListMdFile() {
 
 export function SelectListItem(arg1, arg2) {
   return window['go']['application']['App']['SelectListItem'](arg1, arg2);
+}
+
+export function ToggleMaximize() {
+  return window['go']['application']['App']['ToggleMaximize']();
 }

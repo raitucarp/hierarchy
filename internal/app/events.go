@@ -6,6 +6,7 @@ const (
 	ReloadAllOpenedFiles Event = "ReloadAllOpenedFiles"
 	ReloadSelectedItems  Event = "ReloadSelectedItems"
 	ChangeViewMode       Event = "ChangeViewMode"
+	WindowMaximize       Event = "WindowMaximize"
 )
 
 var AllEvents = []struct {
@@ -15,4 +16,5 @@ var AllEvents = []struct {
 	{ReloadAllOpenedFiles, string(ReloadAllOpenedFiles)},
 	{ReloadSelectedItems, string(ReloadSelectedItems)},
 	{ChangeViewMode, string(ChangeViewMode)},
+	{WindowMaximize, string(WindowMaximize)},
 }

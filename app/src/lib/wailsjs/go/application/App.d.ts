@@ -6,8 +6,12 @@ export function AllOpenedFiles():Promise<application.OpenedFiles>;
 
 export function ChangeSelectedFile(arg1:string):Promise<void>;
 
+export function Exit():Promise<void>;
+
 export function ListSelectedItems(arg1:string):Promise<Array<string>>;
 
 export function OpenListMdFile():Promise<void>;
 
 export function SelectListItem(arg1:string,arg2:string):Promise<void>;
+
+export function ToggleMaximize():Promise<void>;

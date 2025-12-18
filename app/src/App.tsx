@@ -4,7 +4,7 @@ import { Titlebar } from "./components/titlebar";
 // import { ListMdTabs } from "./components/list-tabs";
 import { Hierarchy } from "./components/hierarchy";
 import { useQueryClient } from "@tanstack/react-query";
-import { EventsOn } from "./lib/wailsjs/runtime/runtime";
+import { EventsOn, WindowMaximise } from "./lib/wailsjs/runtime/runtime";
 import { application } from "./lib/wailsjs/go/models";
 import { ListMdTabs } from "./components/list-tabs";
 import { Toaster } from "./components/ui/toaster";

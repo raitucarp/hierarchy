@@ -4,6 +4,7 @@ export namespace application {
 	    ReloadAllOpenedFiles = "ReloadAllOpenedFiles",
 	    ReloadSelectedItems = "ReloadSelectedItems",
 	    ChangeViewMode = "ChangeViewMode",
+	    WindowMaximize = "WindowMaximize",
 	}
 	export enum QueryKey {
 	    OpenedFilesKey = "OpenedFilesKey",
