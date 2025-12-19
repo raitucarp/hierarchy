@@ -20,23 +20,26 @@ jobs:
               platform: linux/amd64,
               os: ubuntu-latest,
               artifact: "hierarchy-app-linux-amd64",
+              output: "hierarchy-app",
             },
             {
               name: hierarchy-app,
               platform: windows/amd64,
               os: windows-latest,
               artifact: "hierarchy-app-windows-amd64.exe",
+              output: "hierarchy-app.exe",
             },
             {
               name: hierarchy-app,
               platform: darwin/universal,
               os: macos-latest,
               artifact: "hierarchy-app-darwin-universal",
+              output: "hierarchy-app",
             },
           ]
     runs-on: ${{ matrix.build.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: dAppServer/wails-build-action@main
@@ -60,33 +63,12 @@ jobs:
 
       - name: Prepare release assets
         run: |
-          # Create a directory for release assets
           mkdir -p release-assets
-
-          # Find and organize build artifacts
-          find ./artifacts -type f -name "hierarchy-app*" | while read file; do
-            # Extract platform name from artifact folder
-            dirname=$(dirname "$file")
-            platform=$(basename "$dirname" | sed 's/hierarchy-app-//')
-
-            # Get file extension
-            filename=$(basename "$file")
-            extension="${filename##*.}"
-
-            # Create new filename with platform and extension
-            if [ "$extension" = "exe" ]; then
-              new_name="hierarchy-app-${platform}.exe"
-            else
-              new_name="hierarchy-app-${platform}"
-            fi
-
-            # Copy to release assets with proper naming
-            cp "$file" "./release-assets/$new_name"
-            chmod +x "./release-assets/$new_name"
+          find ./artifacts -type f | while read file; do
+            cp "$file" "./release-assets/$(basename "$file")"
+            chmod +x "./release-assets/$(basename "$file")" 2>/dev/null || true
           done
-
-          echo "Release assets prepared:"
-          ls -la ./release-assets/
+          ls -la release-assets/
       - name: Generate changelog
         id: generate_changelog
         uses: janheinrichmerker/action-github-changelog-generator@v2.3
