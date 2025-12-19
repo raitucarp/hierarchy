@@ -15,27 +15,9 @@ jobs:
       matrix:
         build:
           [
-            {
-              name: hierarchy-app,
-              platform: linux/amd64,
-              os: ubuntu-latest,
-              artifact: "hierarchy-app-linux-amd64",
-              output: "hierarchy-app",
-            },
-            {
-              name: hierarchy-app,
-              platform: windows/amd64,
-              os: windows-latest,
-              artifact: "hierarchy-app-windows-amd64.exe",
-              output: "hierarchy-app.exe",
-            },
-            {
-              name: hierarchy-app,
-              platform: darwin/universal,
-              os: macos-latest,
-              artifact: "hierarchy-app-darwin-universal",
-              output: "hierarchy-app",
-            },
+            { name: hierarchy, platform: linux/amd64, os: ubuntu-latest },
+            { name: hierarchy, platform: windows/amd64, os: windows-latest },
+            { name: hierarchy, platform: darwin/universal, os: macos-latest },
           ]
     runs-on: ${{ matrix.build.os }}
     steps:
